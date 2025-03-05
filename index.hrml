@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATADREAM</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000000;
+            font-family: 'Courier New', monospace;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: crosshair;
+        }
+
+        @font-face {
+            font-family: 'VT323';
+            src: url('https://cdnjs.cloudflare.com/ajax/libs/vt323/0.1.4/VT323-Regular.ttf') format('truetype');
+        }
+
+        * {
+            font-family: 'VT323', 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+
+        #container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #terminal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 1200px;
+            height: 85%;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(150, 220, 255, 0.2),
+                        inset 0 0 40px rgba(0, 50, 100, 0.2);
+            padding: 20px;
+            z-index: 2;
+            backdrop-filter: blur(5px);
+            overflow: hidden;
+        }
+
+        #terminal-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            letter-spacing: 5px;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(150, 220, 255, 0.5);
+            position: relative;
+        }
+
+        #terminal-header::before, #terminal-header::after {
+            content: "< >";
+            font-size: 0.6em;
+            opacity: 0.6;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        #terminal-header::before {
+            left: 20px;
+        }
+
+        #terminal-header::after {
+            right: 20px;
+        }
+
+        .content-container {
+            height: calc(100% - 100px);
+            overflow-y: auto;
+            padding-right: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(150, 220, 255, 0.3) rgba(0, 0, 0, 0.1);
+        }
+
+        .content-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .content-container::-webkit-scrollbar-thumb {
+            background-color: rgba(150, 220, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .wave-divider {
+            height: 30px;
+            width: 100%;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(100, 200, 255, 0.1) 20%, 
+                rgba(150, 220, 255, 0.2) 50%,
+                rgba(100, 200, 255, 0.1) 80%,
+                transparent 100%);
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wave-divider::before {
+            content: "";
+            position: absolute;
+            width: 200%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 20px,
+                rgba(255, 255, 255, 0.1) 20px,
+                rgba(255, 255, 255, 0.1) 40px
+            );
+            animation: wave 8s linear infinite;
+        }
+
+        @keyframes wave {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0, 20, 40, 0.4);
+            border-left: 3px solid rgba(150, 220, 255, 0.2);
+        }
+
+        .section-title {
+            color: rgba(200, 240, 255, 0.9);
+            margin-bottom: 15px;
+            font-weight: normal;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            text-shadow: 0 0 8px rgba(150, 220, 255, 0.4);
+        }
+
+        .section-title::before {
+            content: "//";
+            color: rgba(150, 220, 255, 0.6);
+            margin-right: 10px;
+        }
+
+        .section-title::after {
+            content: "";
+            flex-grow: 1;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                rgba(150, 220, 255, 0.3) 0%, 
+                transparent 100%);
+            margin-left: 15px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .floating-item {
+            display: inline-block;
+            margin: 8px;
+            padding: 12px 15px;
+            background-color: rgba(20, 20, 25, 0.8);
+            border: 1px solid rgba(150, 220, 255, 0.2);
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(150, 220, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .floating-item:hover {
+            background-color: rgba(30, 30, 40, 0.9);
+            box-shadow: 0 0 15px rgba(150, 220, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .floating-item:hover .item-text {
+            animation: dissolve 1.5s forwards;
+        }
+
+        .floating-item:active {
+            transform: translateY(1px);
+            box-shadow: 0 0 5px rgba(150, 220, 255, 0.2);
+        }
+
+        @keyframes dissolve {
+            0% { opacity: 1; }
+            20% { opacity: 0; }
+            40% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        .binary {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            font-size: 0.8em;
+            color: rgba(150, 220, 255, 0.8);
+        }
+
+        .floating-item:hover .binary {
+            animation: show-binary 1.5s forwards;
+        }
+
+        @keyframes show-binary {
+            0% { opacity: 0; }
+            20% { opacity: 0; }
+            40% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px 20px;
+            font-size: 0.9em;
+            background-color: rgba(10, 10, 15, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-sizing: border-box;
+        }
+
+        .blinking-cursor {
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .status-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-right: 150px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .status-dot.green {
+            background-color: rgba(100, 255, 150, 0.8);
+            box-shadow: 0 0 5px rgba(100, 255, 150, 0.5);
+        }
+
+        .status-dot.amber {
+            background-color: rgba(255, 200, 0, 0.8);
+            box-shadow: 0 0 5px rgba(255, 200, 0, 0.5);
+        }
+
+        .status-dot.red {
+            background-color: rgba(255, 100, 100, 0.8);
+            box-shadow: 0 0 5px rgba(255, 100, 100, 0.5);
+        }
+
+        .status-dot.pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        #time {
+            float: right;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: rgba(30, 30, 40, 0.5);
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-label {
+            z-index: 1;
+        }
+
+        .metric-value {
+            color: rgba(150, 220, 255, 0.9);
+            font-weight: bold;
+            z-index: 1;
+        }
+
+        .progress-bar {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                rgba(100, 200, 255, 0.1) 0%, 
+                rgba(100, 200, 255, 0.2) 100%);
+            z-index: 0;
+            transition: width 1s ease;
+        }
+
+        .data-display {
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 0.85em;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            border: 1px solid rgba(100, 180, 255, 0.2);
+            height: 120px;
+            overflow-y: auto;
+            color: rgba(180, 230, 255, 0.8);
+        }
+
+        .console-line {
+            margin: 3px 0;
+            opacity: 0;
+            animation: fade-in 0.2s forwards;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .visualization {
+            height: 180px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            border: 1px solid rgba(100, 180, 255, 0.2);
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(150, 220, 255, 0.7);
+            box-shadow: 0 0 8px rgba(150, 220, 255, 0.5);
+            transform: translate(-50%, -50%);
+        }
+
+        .node::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 200%;
+            height: 200%;
+            border-radius: 50%;
+            background-color: rgba(150, 220, 255, 0.1);
+            transform: translate(-50%, -50%);
+            animation: pulse-ring 3s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { width: 100%; height: 100%; opacity: 0.5; }
+            100% { width: 300%; height: 300%; opacity: 0; }
+        }
+
+        .connection {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                rgba(150, 220, 255, 0.1), 
+                rgba(150, 220, 255, 0.5),
+                rgba(150, 220, 255, 0.1));
+            transform-origin: 0 0;
+            z-index: 0;
+        }
+
+        .data-packet {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 5px rgba(150, 220, 255, 0.8);
+            transform: translate(-50%, -50%);
+            z-index: 1;
+        }
+        
+        @keyframes packet-motion {
+            0% {
+                transform: translate(-50%, -50%) translateX(0) translateY(0);
+            }
+            100% {
+                transform: translate(-50%, -50%) translateX(var(--dx)) translateY(var(--dy));
+            }
+        }
+
+        .grid-3col {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .chart-container {
+            height: 150px;
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .chart-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            fill: none;
+            stroke: rgba(150, 220, 255, 0.6);
+            stroke-width: 2;
+        }
+
+        .chart-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            fill: url(#chart-gradient);
+        }
+
+        .chart-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(150, 220, 255, 0.5);
+            transform: translate(-50%, -50%);
+        }
+
+        .chart-x-axis {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background-color: rgba(150, 220, 255, 0.3);
+        }
+
+        .chart-y-axis {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 1px;
+            height: 100%;
+            background-color: rgba(150, 220, 255, 0.3);
+        }
+
+        .chart-label {
+            position: absolute;
+            font-size: 0.7em;
+            color: rgba(150, 220, 255, 0.6);
+        }
+
+        .ascii-art {
+            font-size: 0.7em;
+            line-height: 1.2;
+            white-space: pre;
+            color: rgba(150, 220, 255, 0.8);
+            text-align: center;
+            margin: 10px 0;
+            text-shadow: 0 0 5px rgba(150, 220, 255, 0.3);
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(150, 220, 255, 0.2);
+        }
+
+        .tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            background-color: rgba(0, 0, 0, 0.3);
+            color: rgba(150, 220, 255, 0.6);
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            margin-right: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background-color: rgba(30, 50, 70, 0.5);
+            color: rgba(150, 220, 255, 0.9);
+            box-shadow: 0 -2px 5px rgba(0, 20, 40, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fade-in 0.3s forwards;
+        }
+
+        .hexmap {
+            display: grid;
+            grid-template-columns: repeat(10, 30px);
+            grid-gap: 2px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .hex-cell {
+            width: 30px;
+            height: 30px;
+            background-color: rgba(20, 30, 50, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            color: rgba(150, 220, 255, 0.7);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .hex-cell:hover {
+            background-color: rgba(40, 80, 120, 0.5);
+            color: rgba(255, 255, 255, 0.9);
+            transform: scale(1.1);
+            z-index: 1;
+        }
+
+        .hex-cell::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 1px solid rgba(150, 220, 255, 0.2);
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+            background-color: rgba(30, 50, 80, 0.3);
+            z-index: -1;
+        }
+
+        .hex-cell.active {
+            background-color: rgba(50, 100, 150, 0.4);
+            animation: hex-pulse 2s infinite;
+        }
+
+        @keyframes hex-pulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(150, 220, 255, 0.5); }
+            50% { box-shadow: 0 0 15px rgba(150, 220, 255, 0.8); }
+        }
+
+        .alert {
+            background-color: rgba(255, 100, 100, 0.1);
+            border-left: 3px solid rgba(255, 100, 100, 0.5);
+            padding: 8px 12px;
+            margin: 10px 0;
+            position: relative;
+            animation: alert-pulse 2s infinite;
+        }
+
+        @keyframes alert-pulse {
+            0%, 100% { background-color: rgba(255, 100, 100, 0.1); }
+            50% { background-color: rgba(255, 100, 100, 0.2); }
+        }
+
+        .alert::before {
+            content: "!";
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(255, 100, 100, 0.8);
+            color: #000;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 20px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .notification {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 20, 40, 0.8);
+            border: 1px solid rgba(150, 220, 255, 0.4);
+            border-radius: 5px;
+            padding: 15px;
+            width: 300px;
+            box-shadow: 0 0 20px rgba(0, 10, 20, 0.6);
+            z-index: 100;
+            transform: translateX(400px);
+            opacity: 0;
+        }
+
+        .notification.show {
+            animation: slide-in 0.5s forwards, slide-out 0.5s forwards 5s;
+        }
+
+        @keyframes slide-in {
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slide-out {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(400px); opacity: 0; }
+        }
+
+        .notification-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            color: rgba(150, 220, 255, 0.9);
+        }
+
+        .notification-title::before {
+            content: "";
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: rgba(150, 220, 255, 0.8);
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .notification-message {
+            font-size: 0.9em;
+        }
+
+        .reflection {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.05) 0%, 
+                transparent 40%, 
+                transparent 60%, 
+                rgba(255, 255, 255, 0.05) 100%);
+            pointer-events: none;
+        }
+
+        .data-stream {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.3;
+        }
+
+        .stream-column {
+            position: absolute;
+            top: -20%;
+            font-family: monospace;
+            color: rgba(150, 220, 255, 0.7);
+            font-size: 10px;
+            line-height: 1;
+            white-space: nowrap;
+            animation-name: stream-flow;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+
+        @keyframes stream-flow {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(calc(120vh)); }
+        }
+
+        .glitch {
+            position: relative;
+        }
+
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+        }
+
+        .glitch::before {
+            left: 2px;
+            text-shadow: -1px 0 rgba(255, 0, 0, 0.7);
+            animation: glitch-animation 2s infinite linear alternate-reverse;
+        }
+
+        .glitch::after {
+            left: -2px;
+            text-shadow: 1px 0 rgba(0, 0, 255, 0.7);
+            animation: glitch-animation 3s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-animation {
+            0% { clip-path: inset(45% 0 37% 0); }
+            5% { clip-path: inset(33% 0 25% 0); }
+            10% { clip-path: inset(14% 0 4% 0); }
+            15% { clip-path: inset(53% 0 74% 0); }
+            20% { clip-path: inset(86% 0 83% 0); }
+            25% { clip-path: inset(14% 0 27% 0); }
+            30% { clip-path: inset(2% 0 87% 0); }
+            35% { clip-path: inset(52% 0 9% 0); }
+            40% { clip-path: inset(25% 0 53% 0); }
+            45% { clip-path: inset(65% 0 92% 0); }
+            50% { clip-path: inset(47% 0 46% 0); }
+            55% { clip-path: inset(95% 0 37% 0); }
+            60% { clip-path: inset(23% 0 14% 0); }
+            65% { clip-path: inset(58% 0 53% 0); }
+            70% { clip-path: inset(27% 0 40% 0); }
+            75% { clip-path: inset(73% 0 5% 0); }
+            80% { clip-path: inset(43% 0 96% 0); }
+            85% { clip-path: inset(81% 0 93% 0); }
+            90% { clip-path: inset(29% 0 47% 0); }
+            95% { clip-path: inset(54% 0 18% 0); }
+            100% { clip-path: inset(9% 0 79% 0); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particleCanvas"></canvas>
+    
+    <div class="data-stream" id="dataStream"></div>
+    
+    <div id="container">
+        <div id="terminal">
+            <div id="terminal-header" class="glitch" data-text="| D A T A D R E A M |">| D A T A D R E A M |</div>
+            
+            <div class="content-container">
+                <div class="tabs">
+                    <div class="tab active" data-tab="overview">OVERVIEW</div>
+                    <div class="tab" data-tab="analysis">ANALYSIS</div>
+                    <div class="tab" data-tab="network">NETWORK</div>
+                    <div class="tab" data-tab="memory">MEMORY</div>
+                </div>
+                
+                <div class="tab-content active" id="overview">
+                    <div class="section">
+                        <h3 class="section-title">ACTIVE NODES</h3>
+                        <div class="grid-container">
+                            <div class="floating-item">
+                                <span class="item-text">NEXUS</span>
+                                <span class="binary">01001110</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">PULSE</span>
+                                <span class="binary">01010000</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">ECHO</span>
+                                <span class="binary">01000101</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">VOID</span>
+                                <span class="binary">01010110</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">ETHEREAL</span>
+                                <span class="binary">01000101</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">NEBULA</span>
+                                <span class="binary">01001110</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">QUANTUM</span>
+                                <span class="binary">01010001</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">SYNAPTIC</span>
+                                <span class="binary">01010011</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="wave-divider"></div>
+                    
+                    <div class="section">
+                        <h3 class="section-title">SYSTEM STATUS</h3>
+                        <div class="grid-3col">
+                            <div>
+                                <div class="metric-item">
+                                    <span class="metric-label">MEMORY</span>
+                                    <span class="metric-value">89.2%</span>
+                                    <div class="progress-bar" style="width: 89.2%"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">CPU</span>
+                                    <span class="metric-value">76.4%</span>
+                                    <div class="progress-bar" style="width: 76.4%"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">BANDWIDTH</span>
+                                    <span class="metric-value">45.7%</span>
+                                    <div class="progress-bar" style="width: 45.7%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="metric-item">
+                                    <span class="metric-label">NEURAL LOAD</span>
+                                    <span class="metric-value">92.3%</span>
+                                    <div class="progress-bar" style="width: 92.3%"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">QUANTUM FLUX</span>
+                                    <span class="metric-value">33.8%</span>
+                                    <div class="progress-bar" style="width: 33.8%"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">DREAM SYNC</span>
+                                    <span class="metric-value">87.1%</span>
+                                    <div class="progress-bar" style="width: 87.1%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="alert">ANOMALY DETECTED: SECTOR H-12</div>
+                                <div class="data-display" id="consoleOutput">
+                                    <div class="console-line">> Initializing dream sequence...</div>
+                                    <div class="console-line">> Memory fragments restored: 89.2%</div>
+                                    <div class="console-line">> Scanning neural pathways...</div>
+                                    <div class="console-line">> WARNING: Unstable quantum signature detected</div>
+                                    <div class="console-line">> Applying stabilization protocol ECHO-7</div>
+                                    <div class="console-line">> Neural resonance established</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container" id="activityChart">
+                            <div class="chart-y-axis"></div>
+                            <div class="chart-x-axis"></div>
+                            <svg width="100%" height="100%" viewBox="0 0 600 150" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="chart-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:rgba(150, 220, 255, 0.4)"/>
+                                        <stop offset="100%" style="stop-color:rgba(150, 220, 255, 0)"/>
+                                    </linearGradient>
+                                </defs>
+                                <path class="chart-line" d="M0,120 C40,100 80,110 120,80 C160,50 200,30 240,40 C280,50 320,90 360,70 C400,50 440,60 480,30 C520,10 560,20 600,15"></path>
+                                <path class="chart-area" d="M0,120 C40,100 80,110 120,80 C160,50 200,30 240,40 C280,50 320,90 360,70 C400,50 440,60 480,30 C520,10 560,20 600,15 L600,150 L0,150 Z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="wave-divider"></div>
+                    
+                    <div class="section">
+                        <h3 class="section-title">DATA FRAGMENTS</h3>
+                        <div class="ascii-art">
+                ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+                █ ▄▄▄▄▄ █▄▀█▄▄█ ▄▄▄▄▄ █▄▄▄█
+                █ █   █ █ ▄ ▄ █ █   █ █▄▀ █
+                █ █▄▄▄█ █▄█▄█▄█ █▄▄▄█ █ ▄▄█
+                █▄▄▄▄▄▄▄█▄▀▄█▄█▄▄▄▄▄▄▄█▄█▄█
+                █ ▄▀▄▀▄ █▄█▄▄ ▀▄█▄▀█▄▀ ▄▀ █
+                █▄█▄█▄▄▄█ ▄█ ▄█ ▀█▄▄▄▄█  ██
+                ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+        </div>
+                        
+                        <div class="grid-container">
+                            <div class="floating-item">
+                                <span class="item-text">DREAMCORE</span>
+                                <span class="binary">01000100</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">ECHOES</span>
+                                <span class="binary">01000101</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">NEURAL</span>
+                                <span class="binary">01001110</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">ETHEREAL</span>
+                                <span class="binary">01000101</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">SIGNAL</span>
+                                <span class="binary">01010011</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">WHISPER</span>
+                                <span class="binary">01010111</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">RESONANCE</span>
+                                <span class="binary">01010010</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">PARTICLE</span>
+                                <span class="binary">01010000</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="visualization" id="dataViz">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="analysis">
+                    <div class="section">
+                        <h3 class="section-title">DREAM PATTERN ANALYSIS</h3>
+                        <div class="grid-3col">
+                            <div>
+                                <div class="metric-item">
+                                    <span class="metric-label">COHERENCE</span>
+                                    <span class="metric-value">67.3%</span>
+                                    <div class="progress-bar" style="width: 67.3%"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">STABILITY</span>
+                                    <span class="metric-value">82.9%</span>
+                                    <div class="progress-bar" style="width: 82.9%"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">RESONANCE</span>
+                                    <span class="metric-value">94.2%</span>
+                                    <div class="progress-bar" style="width: 94.2%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="metric-item">
+                                    <span class="metric-label">ENTROPY</span>
+                                    <span class="metric-value">41.7%</span>
+                                    <div class="progress-bar" style="width: 41.7%"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">COMPLEXITY</span>
+                                    <span class="metric-value">78.6%</span>
+                                    <div class="progress-bar" style="width: 78.6%"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">FRAGMENTATION</span>
+                                    <span class="metric-value">23.1%</span>
+                                    <div class="progress-bar" style="width: 23.1%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="data-display">
+                                    <div class="console-line">> Pattern recognition active</div>
+                                    <div class="console-line">> Matching neural signatures...</div>
+                                    <div class="console-line">> Found 7 matching patterns</div>
+                                    <div class="console-line">> Primary pattern: RECURSION</div>
+                                    <div class="console-line">> Secondary pattern: DISSOLUTION</div>
+                                    <div class="console-line">> Dream state integrity: 82.9%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="wave-divider"></div>
+                    
+                    <div class="section">
+                        <h3 class="section-title">SPECTRAL ANALYSIS</h3>
+                        <div class="hexmap" id="hexMap">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                        
+                        <div class="chart-container" id="spectrumChart">
+                            <svg width="100%" height="100%" viewBox="0 0 600 150" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="spectrum-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:rgba(100, 180, 255, 0.8)"/>
+                                        <stop offset="50%" style="stop-color:rgba(200, 150, 255, 0.8)"/>
+                                        <stop offset="100%" style="stop-color:rgba(255, 150, 200, 0.8)"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M0,120 C20,110 40,90 60,100 C80,110 100,130 120,120 C140,110 160,80 180,60 C200,40 220,30 240,45 C260,60 280,90 300,100 C320,110 340,105 360,85 C380,65 400,50 420,70 C440,90 460,100 480,90 C500,80 520,50 540,65 C560,80 580,100 600,90" 
+                                      stroke="url(#spectrum-gradient)" 
+                                      stroke-width="3" 
+                                      fill="none"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="wave-divider"></div>
+                    
+                    <div class="section">
+                        <h3 class="section-title">NEURAL MAPPING</h3>
+                        <div class="visualization" id="neuralMap">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="network">
+                    <div class="section">
+                        <h3 class="section-title">NETWORK TOPOLOGY</h3>
+                        <div class="visualization" id="networkTopology" style="height: 250px;">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                        
+                        <div class="grid-3col">
+                            <div>
+                                <div class="metric-item">
+                                    <span class="metric-label">ACTIVE NODES</span>
+                                    <span class="metric-value">42</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">CONNECTIONS</span>
+                                    <span class="metric-value">187</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="metric-item">
+                                    <span class="metric-label">BANDWIDTH</span>
+                                    <span class="metric-value">738 Tb/s</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">LATENCY</span>
+                                    <span class="metric-value">3.2 ms</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="metric-item">
+                                    <span class="metric-label">PACKET LOSS</span>
+                                    <span class="metric-value">0.04%</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">ERROR RATE</span>
+                                    <span class="metric-value">0.003%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="wave-divider"></div>
+                    
+                    <div class="section">
+                        <h3 class="section-title">DATA TRANSFER</h3>
+                        <div class="alert">ANOMALOUS DATA PACKET DETECTED</div>
+                        
+                        <div class="data-display">
+                            <div class="console-line">> Tracking data flow...</div>
+                            <div class="console-line">> Source: NEXUS.12.845.A</div>
+                            <div class="console-line">> Destination: VOID.37.291.F</div>
+                            <div class="console-line">> Packet structure: NON-STANDARD</div>
+                            <div class="console-line">> Contents: ENCRYPTED (AES-4096)</div>
+                            <div class="console-line">> ALERT: Quantum signature mismatch</div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <svg width="100%" height="100%" viewBox="0 0 600 150" preserveAspectRatio="none">
+                                <path d="M0,75 L600,75" stroke="rgba(150, 220, 255, 0.3)" stroke-width="1" stroke-dasharray="5,5"/>
+                                <path d="M0,75 
+                                         L50,75 
+                                         L70,40 
+                                         L90,75 
+                                         L150,75 
+                                         L170,110 
+                                         L190,75 
+                                         L250,75 
+                                         L270,40 
+                                         L290,75 
+                                         L350,75 
+                                         L370,40 
+                                         L390,110 
+                                         L410,75 
+                                         L470,75 
+                                         L490,40 
+                                         L510,75 
+                                         L570,75 
+                                         L590,110 
+                                         L600,75" 
+                                      stroke="rgba(150, 220, 255, 0.8)" 
+                                      stroke-width="2" 
+                                      fill="none"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="wave-divider"></div>
+                    
+                    <div class="section">
+                        <h3 class="section-title">ACTIVE CONNECTIONS</h3>
+                        <div class="grid-container">
+                            <div class="floating-item">
+                                <span class="item-text">NEXUS → PULSE</span>
+                                <span class="binary">01001110</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">ECHO → VOID</span>
+                                <span class="binary">01000101</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">PULSE → ECHO</span>
+                                <span class="binary">01010000</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">NEBULA → NEXUS</span>
+                                <span class="binary">01001110</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">VOID → QUANTUM</span>
+                                <span class="binary">01010110</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">QUANTUM → SYNAPTIC</span>
+                                <span class="binary">01010001</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">SYNAPTIC → NEXUS</span>
+                                <span class="binary">01010011</span>
+                            </div>
+                            <div class="floating-item">
+                                <span class="item-text">ETHEREAL → NEBULA</span>
+                                <span class="binary">01000101</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="memory">
+                    <div class="section">
+                        <h3 class="section-title">MEMORY FRAGMENTS</h3>
+                        <div class="data-display" style="height: 200px;">
+                            <div class="console-line">> Fragment #7842A</div>
+                            <div class="console-line">... and then the light bent around itself, forming a möbius loop of consciousness ...</div>
+                            <div class="console-line">> Fragment #2391F</div>
+                            <div class="console-line">... the binary stars pulsed in sync with the neural patterns, as if the cosmos itself was dreaming ...</div>
+                            <div class="console-line">> Fragment #6720C</div>
+                            <div class="console-line">... quantum entanglement of thought and matter, where dreams became reality and reality dissolved into dreams ...</div>
+                            <div class="console-line">> Fragment #1058D</div>
+                            <div class="console-line">... the architect designed systems within systems, a recursive pattern of self-similar structures ...</div>
+                            <div class="console-line">> Fragment #9342E</div>
+                            <div class="console-line">... as data flowed through the ethereal network, it gained sentience, questioning its own existence ...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="wave-divider"></div>
+                    
+                    <div class="section">
+                        <h3 class="section-title">MEMORY ALLOCATION</h3>
+                        <div class="visualization" id="memoryAllocation" style="height: 200px;">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                        
+                        <div class="grid-3col">
+                            <div>
+                                <div class="metric-item">
+                                    <span class="metric-label">CORE MEMORY</span>
+                                    <span class="metric-value">89.2%</span>
+                                    <div class="progress-bar" style="width: 89.2%"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">BUFFER</span>
+                                    <span class="metric-value">34.7%</span>
+                                    <div class="progress-bar" style="width: 34.7%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="metric-item">
+                                    <span class="metric-label">CACHE</span>
+                                    <span class="metric-value">72.3%</span>
+                                    <div class="progress-bar" style="width: 72.3%"></div>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">SWAP</span>
+                                    <span class="metric-value">12.8%</span>
+                                    <div class="progress-bar" style="width: 12.8%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="metric-item">
+                                    <span class="metric-label">QUANTUM BUFFER</span>
+                                    <span class="metric-value">98.3%</span>
+                                    <div class="progress-bar" style="width: 98.3%"></div>
+                                </div>
+                                <div class="alert">BUFFER OVERFLOW RISK DETECTED</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="wave-divider"></div>
+                    
+                    <div class="section">
+                        <h3 class="section-title">MEMORY DEFRAGMENTATION</h3>
+                        <div class="hexmap" id="defragMap">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                        
+                        <div class="metric-item">
+                            <span class="metric-label">DEFRAG PROGRESS</span>
+                            <span class="metric-value">47.2%</span>
+                            <div class="progress-bar" style="width: 47.2%"></div>
+                        </div>
+                        
+                        <div class="data-display">
+                            <div class="console-line">> Defragmentation process active</div>
+                            <div class="console-line">> Optimizing memory structure...</div>
+                            <div class="console-line">> Resolving data conflicts...</div>
+                            <div class="console-line">> Estimated completion: 12:34:17</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                <div class="status-indicators">
+                    <div class="status-indicator">
+                        <div class="status-dot green pulse"></div>
+                        <span>SYSTEM</span>
+                    </div>
+                    <div class="status-indicator">
+                        <div class="status-dot amber"></div>
+                        <span>QUANTUM</span>
+                    </div>
+                    <div class="status-indicator">
+                        <div class="status-dot red"></div>
+                        <span>SECURITY</span>
+                    </div>
+                </div>
+                <span>DREAM::ACTIVE <span class="blinking-cursor">_</span></span>
+                <span id="time"></span>
+            </div>
+            
+            <div class="reflection"></div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">
+        <div class="notification-title">SYSTEM ALERT</div>
+        <div class="notification-message">Quantum fluctuation detected in memory sector H-12. Stabilization protocols engaged.</div>
+    </div>
+
+    <script>
+        // Particle animation
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particles = [];
+        const particleCount = 150;
+        const connectionDistance = 120;
+        const mouseRadius = 150;
+
+        let mouse = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            active: false
+        };
+
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            mouse.active = true;
+        });
+
+        canvas.addEventListener('mouseout', () => {
+            mouse.active = false;
+        });
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.color = `rgba(150, 220, 255, ${Math.random() * 0.6 + 0.2})`;
+            }
+
+            update() {
+                // Update position
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                // Mouse interaction
+                if (mouse.active) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < mouseRadius) {
+                        const force = (mouseRadius - distance) / mouseRadius;
+                        const angle = Math.atan2(dy, dx);
+                        this.speedX -= Math.cos(angle) * force * 0.1;
+                        this.speedY -= Math.sin(angle) * force * 0.1;
+                    }
+                }
+
+                // Boundary checks
+                if (this.x < 0 || this.x > canvas.width) {
+                    this.speedX = -this.speedX;
+                }
+                if (this.y < 0 || this.y > canvas.height) {
+                    this.speedY = -this.speedY;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+
+        // Initialize particles
+        function init() {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        // Draw connections between particles
+        function drawConnections() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < connectionDistance) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(150, 220, 255, ${(connectionDistance - distance) / connectionDistance * 0.2})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Create data stream effect
+        function createDataStream() {
+            const dataStream = document.getElementById('dataStream');
+            const columnCount = 50;
+            
+            for (let i = 0; i < columnCount; i++) {
+                const column = document.createElement('div');
+                column.className = 'stream-column';
+                column.style.left = `${Math.random() * 100}%`;
+                column.style.animationDuration = `${Math.random() * 10 + 10}s`;
+                
+                let content = '';
+                const length = Math.floor(Math.random() * 20) + 10;
+                
+                for (let j = 0; j < length; j++) {
+                    content += `${Math.round(Math.random())}`;
+                }
+                
+                column.textContent = content;
+                dataStream.appendChild(column);
+            }
+        }
+
+        // Create hex map
+        function createHexMap() {
+            const hexMap = document.getElementById('hexMap');
+            const defragMap = document.getElementById('defragMap');
+            
+            if (!hexMap || !defragMap) return;
+            
+            // Create hex cells for analysis tab
+            for (let i = 0; i < 50; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'hex-cell';
+                const hexValue = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+                cell.textContent = hexValue;
+                
+                if (Math.random() < 0.2) {
+                    cell.classList.add('active');
+                }
+                
+                hexMap.appendChild(cell);
+            }
+            
+            // Create hex cells for memory tab
+            for (let i = 0; i < 50; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'hex-cell';
+                const hexValue = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+                cell.textContent = hexValue;
+                
+                if (Math.random() < 0.2) {
+                    cell.classList.add('active');
+                }
+                
+                defragMap.appendChild(cell);
+            }
+        }
+
+        // Create network visualization
+        function createNetworkVisualization() {
+            const container = document.getElementById('networkTopology');
+            if (!container) return;
+            
+            const nodeCount = 12;
+            const nodes = [];
+            
+            // Create nodes
+            for (let i = 0; i < nodeCount; i++) {
+                const node = document.createElement('div');
+                node.className = 'node';
+                
+                const x = 20 + Math.random() * (container.offsetWidth - 40);
+                const y = 20 + Math.random() * (container.offsetHeight - 40);
+                
+                node.style.left = `${x}px`;
+                node.style.top = `${y}px`;
+                
+                container.appendChild(node);
+                nodes.push({ element: node, x, y });
+            }
+            
+            // Create connections
+            for (let i = 0; i < nodes.length; i++) {
+                const connections = Math.floor(Math.random() * 3) + 1;
+                
+                for (let j = 0; j < connections; j++) {
+                    const targetIndex = Math.floor(Math.random() * nodes.length);
+                    if (targetIndex !== i) {
+                        const connection = document.createElement('div');
+                        connection.className = 'connection';
+                        
+                        const dx = nodes[targetIndex].x - nodes[i].x;
+                        const dy = nodes[targetIndex].y - nodes[i].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                        
+                        connection.style.width = `${distance}px`;
+                        connection.style.left = `${nodes[i].x}px`;
+                        connection.style.top = `${nodes[i].y}px`;
+                        connection.style.transform = `rotate(${angle}deg)`;
+                        
+                        // Add data packet animation
+                        if (Math.random() < 0.5) {
+                            const packet = document.createElement('div');
+                            packet.className = 'data-packet';
+                            
+                            packet.style.left = `${nodes[i].x}px`;
+                            packet.style.top = `${nodes[i].y}px`;
+                            
+                            const animationDuration = Math.random() * 3 + 2;
+                            packet.style.animation = `packet-motion ${animationDuration}s linear infinite`;
+                            packet.style.animationDelay = `${Math.random() * 2}s`;
+                            
+                            // Using style.setProperty for the animation
+                            packet.style.setProperty('--dx', `${dx}px`);
+                            packet.style.setProperty('--dy', `${dy}px`);
+                            
+                            container.appendChild(packet);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Create memory visualization
+        function createMemoryVisualization() {
+            const container = document.getElementById('memoryAllocation');
+            if (!container) return;
+            
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            const blockSize = 15;
+            const cols = Math.floor(width / blockSize);
+            const rows = Math.floor(height / blockSize);
+            
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const block = document.createElement('div');
+                    block.className = 'hex-cell';
+                    block.style.position = 'absolute';
+                    block.style.width = `${blockSize - 2}px`;
+                    block.style.height = `${blockSize - 2}px`;
+                    block.style.left = `${x * blockSize}px`;
+                    block.style.top = `${y * blockSize}px`;
+                    
+                    // Different colors for different memory types
+                    const type = Math.random();
+                    if (type < 0.6) {
+                        block.style.backgroundColor = 'rgba(100, 180, 255, 0.3)'; // Core
+                    } else if (type < 0.8) {
+                        block.style.backgroundColor = 'rgba(200, 150, 255, 0.3)'; // Cache
+                    } else if (type < 0.95) {
+                        block.style.backgroundColor = 'rgba(100, 255, 200, 0.3)'; // Buffer
+                    } else {
+                        block.style.backgroundColor = 'rgba(255, 100, 100, 0.3)'; // Error
+                        block.classList.add('active');
+                    }
+                    
+                    container.appendChild(block);
+                }
+            }
+        }
+        
+        // Create neural map
+        function createNeuralMap() {
+            const container = document.getElementById('neuralMap');
+            if (!container) return;
+            
+            const nodeCount = 20;
+            const nodes = [];
+            
+            // Create nodes
+            for (let i = 0; i < nodeCount; i++) {
+                const node = document.createElement('div');
+                node.className = 'node';
+                
+                const x = 20 + Math.random() * (container.offsetWidth - 40);
+                const y = 20 + Math.random() * (container.offsetHeight - 40);
+                
+                node.style.left = `${x}px`;
+                node.style.top = `${y}px`;
+                node.style.backgroundColor = `rgba(${150 + Math.random() * 50}, ${200 + Math.random() * 55}, 255, 0.7)`;
+                
+                container.appendChild(node);
+                nodes.push({ element: node, x, y });
+            }
+            
+            // Create connections between nodes that are close
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[j].x - nodes[i].x;
+                    const dy = nodes[j].y - nodes[i].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 100) {
+                        const connection = document.createElement('div');
+                        connection.className = 'connection';
+                        
+                        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                        
+                        connection.style.width = `${distance}px`;
+                        connection.style.left = `${nodes[i].x}px`;
+                        connection.style.top = `${nodes[i].y}px`;
+                        connection.style.transform = `rotate(${angle}deg)`;
+                        
+                        container.appendChild(connection);
+                    }
+                }
+            }
+        }
+        
+        // Create data visualization
+        function createDataVisualization() {
+            const container = document.getElementById('dataViz');
+            if (!container) return;
+            
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            
+            // Create randomly positioned data nodes
+            for (let i = 0; i < 15; i++) {
+                const node = document.createElement('div');
+                node.className = 'node';
+                
+                const x = 20 + Math.random() * (width - 40);
+                const y = 20 + Math.random() * (height - 40);
+                
+                node.style.left = `${x}px`;
+                node.style.top = `${y}px`;
+                
+                container.appendChild(node);
+            }
+        }
+        
+        // Initialize tabs
+        function initTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    tab.classList.add('active');
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        }
+        
+        // Show notification
+        function showNotification() {
+            setTimeout(() => {
+                const notification = document.getElementById('notification');
+                notification.classList.add('show');
+                
+                // Add random notifications occasionally
+                setInterval(() => {
+                    if (Math.random() < 0.3) {
+                        const messages = [
+                            "Neural pathway reconstruction complete.",
+                            "Quantum fluctuation detected in sector F-7.",
+                            "Memory fragmentation reached critical level.",
+                            "Dreamstate stability increased by 12%.",
+                            "Data packet loss in ethereal network."
+                        ];
+                        
+                        const notification = document.getElementById('notification');
+                        notification.querySelector('.notification-message').textContent = messages[Math.floor(Math.random() * messages.length)];
+                        notification.classList.remove('show');
+                        
+                        // Force reflow
+                        void notification.offsetWidth;
+                        
+                        notification.classList.add('show');
+                    }
+                }, 10000);
+            }, 3000);
+        }
+        
+        // Animation loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw particles
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+            }
+            
+            drawConnections();
+            requestAnimationFrame(animate);
+        }
+        
+        // Binary text conversion
+        function initBinaryText() {
+            const floatingItems = document.querySelectorAll('.floating-item');
+            floatingItems.forEach(item => {
+                const text = item.querySelector('.item-text').textContent;
+                const binary = item.querySelector('.binary');
+                
+                binary.textContent = text.split('').map(char => {
+                    return char.charCodeAt(0).toString(2).padStart(8, '0');
+                }).join(' ').substring(0, 8);
+            });
+        }
+        
+        // Digital clock
+        function updateTime() {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            let seconds = now.getSeconds();
+            
+            hours = hours < 10 ? '0' + hours : hours;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            
+            document.getElementById('time').textContent = `${hours}:${minutes}:${seconds}`;
+            setTimeout(updateTime, 1000);
+        }
+        
+        // Update console with new lines periodically
+        function updateConsole() {
+            const consoleOutput = document.getElementById('consoleOutput');
+            if (!consoleOutput) return;
+            
+            const messages = [
+                "> Neural pathway established",
+                "> Quantum signature verified",
+                "> Memory fragment recovered",
+                "> Synchronizing dream states...",
+                "> Anomaly detected in sector K-7",
+                "> Pattern recognition activated",
+                "> Data stream integrity: 97.3%",
+                "> Scanning ethereal network..."
+            ];
+            
+            setInterval(() => {
+                const line = document.createElement('div');
+                line.className = 'console-line';
+                line.textContent = messages[Math.floor(Math.random() * messages.length)];
+                
+                consoleOutput.appendChild(line);
+                
+                // Remove old lines if too many
+                if (consoleOutput.children.length > 12) {
+                    consoleOutput.removeChild(consoleOutput.children[0]);
+                }
+                
+                // Scroll to bottom
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }, 3000);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            init();
+        });
+        
+        // Initialize
+        function initialize() {
+            init();
+            animate();
+            updateTime();
+            createDataStream();
+            createHexMap();
+            createNetworkVisualization();
+            createMemoryVisualization();
+            createNeuralMap();
+            createDataVisualization();
+            initTabs();
+            initBinaryText();
+            updateConsole();
+            showNotification();
+        }
+        
+        // Start everything when the page loads
+        window.addEventListener('load', initialize);
+    </script>
+</body>
+</html>
